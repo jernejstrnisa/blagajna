@@ -2,106 +2,166 @@
 <html lang="sl">
 <head>
   <meta charset="UTF-8">
-  <title>Naročila – uporabnik</title>
+  <title>Naročila - Natakar</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    .artikli { display: flex; gap: 15px; margin-top: 20px; }
-    .artikel {
-      border: 1px solid #ccc; padding: 20px; cursor: pointer;
-      border-radius: 8px; text-align: center; width: 120px;
-    }
-    .artikel:hover { background: #f0f0f0; }
-    .kosarica { margin-top: 20px; }
-    button { margin-top: 10px; padding: 10px; border-radius: 6px; }
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    h1 { color: #333; }
+    .form-section, .orders-section { margin-bottom: 30px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    th { background: #f5f5f5; }
+    input[type="number"] { width: 60px; }
+    .total { font-weight: bold; margin-top: 10px; }
+    button { padding: 8px 15px; margin-top: 10px; cursor: pointer; }
+    select { padding: 5px; }
   </style>
 </head>
 <body>
-  <h2>Naročilo</h2>
-  <label>Številka mize: <input type="number" id="miza"></label><br><br>
-  <label>Ime: <input type="text" id="ime"></label><br><br>
+  <h1>Naročila - Natakar</h1>
 
-  <div class="artikli">
-    <div class="artikel" onclick="dodajArtikel('Špricar', 2.5)">Špricar<br>2.5€</div>
-    <div class="artikel" onclick="dodajArtikel('Pivo', 3)">Pivo<br>3€</div>
-    <div class="artikel" onclick="dodajArtikel('Liter', 7)">Liter<br>7€</div>
-    <div class="artikel" onclick="dodajArtikel('Čevapčiči', 10)">Čevapčiči<br>10€</div>
+  <div class="form-section">
+    <label>Ime natakarja: <input type="text" id="waiterName"></label><br><br>
+    <label>Številka mize: <input type="text" id="tableNumber"></label>
+
+    <h2>Cenik</h2>
+    <table>
+      <tr><th>Artikel</th><th>Cena (€)</th><th>Količina</th></tr>
+      <tr><td>Pivo</td><td>3</td><td><input type="number" id="beer" min="0" value="0"></td></tr>
+      <tr><td>Vino</td><td>2.5</td><td><input type="number" id="wine" min="0" value="0"></td></tr>
+      <tr><td>Čevapčiči</td><td>7</td><td><input type="number" id="cevapi" min="0" value="0"></td></tr>
+      <tr><td>Hotdog</td><td>4</td><td><input type="number" id="hotdog" min="0" value="0"></td></tr>
+    </table>
+
+    <div class="total">Skupaj: <span id="total">0</span> €</div>
+    <button onclick="submitOrder()">Pošlji naročilo</button>
   </div>
 
-  <div class="kosarica">
-    <h3>Košarica</h3>
-    <ul id="kosarica"></ul>
-    <p><strong>Skupaj: <span id="skupaj">0</span> €</strong></p>
-    <button onclick="posljiNarocilo()">Pošlji naročilo</button>
-    <button onclick="resetKosarica()">Ponastavi</button>
+  <div class="orders-section">
+    <h2>Seznam naročil</h2>
+    <table id="ordersTable">
+      <tr>
+        <th>Natakar</th>
+        <th>Miza</th>
+        <th>Artikli</th>
+        <th>Skupaj (€)</th>
+        <th>Status</th>
+      </tr>
+    </table>
   </div>
 
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js"></script>
   <script>
+    // Firebase podatki
     const firebaseConfig = {
-      apiKey: "AIzaSyC5KUuTYzL38tlV0LoZpUKfyZgUKKT6Fps",
-      authDomain: "lukovekblagajna.firebaseapp.com",
-      databaseURL: "https://lukovekblagajna-default-rtdb.europe-west1.firebasedatabase.app",
-      projectId: "lukovekblagajna",
-      storageBucket: "lukovekblagajna.firebasestorage.app",
-      messagingSenderId: "931349409467",
-      appId: "1:931349409467:web:92a3be614d9e308e18439e",
-      measurementId: "G-7P9RZG602T"
+      apiKey: "AIzaSyAuFCkvfNrRDqdboajGnVI4eKGoDjQRk5M",
+      authDomain: "blagajnalukovek.firebaseapp.com",
+      databaseURL: "https://blagajnalukovek-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "blagajnalukovek",
+      storageBucket: "blagajnalukovek.firebasestorage.app",
+      messagingSenderId: "642858971177",
+      appId: "1:642858971177:web:8e91684446fd670bd0ec38",
+      measurementId: "G-6G33YYN9T1"
     };
 
-    const app = firebase.initializeApp(firebaseConfig);
+    firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    let kosarica = [];
+    const prices = { beer: 3, wine: 2.5, cevapi: 7, hotdog: 4 };
 
-    function dodajArtikel(ime, cena) {
-      let najden = kosarica.find(a => a.ime === ime);
-      if (najden) { najden.kolicina++; }
-      else { kosarica.push({ime, cena, kolicina: 1}); }
-      prikaziKosarico();
+    // sprotni izračun
+    const inputs = document.querySelectorAll('input[type="number"]');
+    inputs.forEach(inp => inp.addEventListener("input", updateTotal));
+
+    function updateTotal() {
+      let total = 0;
+      for (let key in prices) {
+        const qty = parseInt(document.getElementById(key).value) || 0;
+        total += qty * prices[key];
+      }
+      document.getElementById("total").innerText = total.toFixed(2);
     }
 
-    function prikaziKosarico() {
-      const ul = document.getElementById("kosarica");
-      ul.innerHTML = "";
-      let skupaj = 0;
-      kosarica.forEach(a => {
-        skupaj += a.cena * a.kolicina;
-        const li = document.createElement("li");
-        li.textContent = `${a.ime} x${a.kolicina} = ${a.cena*a.kolicina}€`;
-        ul.appendChild(li);
-      });
-      document.getElementById("skupaj").textContent = skupaj.toFixed(2);
-    }
-
-    function resetKosarica() {
-      kosarica = [];
-      document.getElementById("kosarica").innerHTML = "";
-      document.getElementById("skupaj").textContent = "0";
-    }
-
-    function posljiNarocilo() {
-      const miza = document.getElementById("miza").value;
-      const ime = document.getElementById("ime").value;
-      if (!miza || !ime || kosarica.length === 0) {
-        alert("Izpolni ime, številko mize in dodaj artikel!");
+    function submitOrder() {
+      const waiterName = document.getElementById("waiterName").value.trim();
+      const tableNumber = document.getElementById("tableNumber").value.trim();
+      if (!waiterName || !tableNumber) {
+        alert("Vnesi ime natakarja in številko mize!");
         return;
       }
 
-      const narocilo = {
-        miza, ime, artikli: kosarica,
-        status: "Čakanje",
-        cas: Date.now()
+      let items = {};
+      let total = 0;
+      for (let key in prices) {
+        const qty = parseInt(document.getElementById(key).value) || 0;
+        if (qty > 0) {
+          items[key] = qty;
+          total += qty * prices[key];
+        }
+      }
+
+      const order = {
+        waiter: waiterName,
+        table: tableNumber,
+        items: items,
+        total: total,
+        status: "V čakanju"
       };
 
-      db.ref("narocila").push(narocilo);
-
-      resetKosarica();
-      document.getElementById("miza").value = "";
-      document.getElementById("ime").value = "";
-      alert("Naročilo poslano!");
+      db.ref("orders").push(order);
+      clearForm();
     }
+
+    function clearForm() {
+      document.getElementById("beer").value = 0;
+      document.getElementById("wine").value = 0;
+      document.getElementById("cevapi").value = 0;
+      document.getElementById("hotdog").value = 0;
+      document.getElementById("total").innerText = "0";
+    }
+
+    // prikaz naročil z možnostjo spremembe statusa
+    db.ref("orders").on("value", snapshot => {
+      const ordersTable = document.getElementById("ordersTable");
+      ordersTable.innerHTML = `
+        <tr>
+          <th>Natakar</th>
+          <th>Miza</th>
+          <th>Artikli</th>
+          <th>Skupaj (€)</th>
+          <th>Status</th>
+        </tr>`;
+
+      snapshot.forEach(child => {
+        const order = child.val();
+        const key = child.key;
+        const row = ordersTable.insertRow(-1);
+        row.insertCell(0).innerText = order.waiter;
+        row.insertCell(1).innerText = order.table;
+
+        let itemsStr = "";
+        for (let item in order.items) {
+          itemsStr += `${item} (${order.items[item]}), `;
+        }
+        row.insertCell(2).innerText = itemsStr.slice(0, -2);
+        row.insertCell(3).innerText = order.total.toFixed(2);
+
+        // dropdown za status
+        const statusCell = row.insertCell(4);
+        const select = document.createElement("select");
+        ["V čakanju", "V izvedbi", "Zaključeno"].forEach(st => {
+          const option = document.createElement("option");
+          option.value = st;
+          option.text = st;
+          if (order.status === st) option.selected = true;
+          select.appendChild(option);
+        });
+        select.addEventListener("change", () => {
+          db.ref("orders/" + key + "/status").set(select.value);
+        });
+        statusCell.appendChild(select);
+      });
+    });
   </script>
 </body>
 </html>

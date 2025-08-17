@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+  <meta charset="UTF-8">
+  <title>Naročila - Natakar</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    h1 { color: #333; }
+    .form-section { margin-bottom: 30px; }
+    .items { margin-top: 15px; }
+    .items button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    .total { font-weight: bold; margin-top: 20px; font-size: 18px; }
+    button.send { background: #4CAF50; color: white; border: none; }
+  </style>
+</head>
+<body>
+  <h1>Naročila - Natakar</h1>
+
+  <div class="form-section">
+    <label>Ime natakarja: <input type="text" id="waiterName"></label><br><br>
+    <label>Številka mize: <input type="number" id="tableNumber" value="0" min="0"></label>
+
+    <h2>Cenik</h2>
+    <div class="items">
+      <button onclick="addItem('Pivo')">Pivo (3€)</button>
+      <button onclick="addItem('Vino')">Vino (2.5€)</button>
+      <button onclick="addItem('Čevapčiči')">Čevapčiči (7€)</button>
+      <button onclick="addItem('Hotdog')">Hotdog (4€)</button>
+    </div>
+
+    <div class="total">Skupaj: <span id="total">0</span> €</div>
+    <button class="send" onclick="submitOrder()">Pošlji naročilo</button>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAuFCkvfNrRDqdboajGnVI4eKGoDjQRk5M",
+      authDomain: "blagajnalukovek.firebaseapp.com",
+      databaseURL: "https://blagajnalukovek-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "blagajnalukovek",
+      storageBucket: "blagajnalukovek.firebasestorage.app",
+      messagingSenderId: "642858971177",
+      appId: "1:642858971177:web:8e91684446fd670bd0ec38",
+      measurementId: "G-6G33YYN9T1"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const prices = { Pivo: 3, Vino: 2.5, Čevapčiči: 7, Hotdog: 4 };
+    let items = {};
+
+    function addItem(item) {
+      if (!items[item]) items[item] = 0;
+      items[item]++;
+      updateTotal();
+    }
+
+    function updateTotal() {
+      let total = 0;
+      for (let key in items) {
+        total += items[key] * prices[key];
+      }
+      document.getElementById("total").innerText = total.toFixed(2);
+    }
+
+    function submitOrder() {
+      const waiterName = document.getElementById("waiterName").value.trim();
+      const tableNumber = document.getElementById("tableNumber").value.trim();
+      if (!waiterName || !tableNumber || tableNumber === "0") {
+        alert("Vnesi ime natakarja in številko mize!");
+        return;
+      }
+
+      let total = 0;
+      for (let key in items) {
+        total += items[key] * prices[key];
+      }
+
+      const order = {
+        waiter: waiterName,
+        table: tableNumber,
+        items: items,
+        total: total,
+        status: "V čakanju"
+      };
+
+      db.ref("orders").push(order);
+
+      // Ponastavi obrazec
+      items = {};
+      document.getElementById("total").innerText = "0";
+      document.getElementById("tableNumber").value = 0; // ponastavi mizo na 0
+    }
+  </script>
+</body>
+</html>

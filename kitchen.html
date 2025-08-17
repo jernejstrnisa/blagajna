@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+  <meta charset="UTF-8">
+  <title>Naročila - Kuhinja</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    h1 { color: #333; }
+    table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    th { background: #f5f5f5; }
+  </style>
+</head>
+<body>
+  <h1>Seznam naročil - Kuhinja</h1>
+  <table id="ordersTable">
+    <tr>
+      <th>Natakar</th>
+      <th>Miza</th>
+      <th>Artikli</th>
+      <th>Skupaj (€)</th>
+      <th>Status</th>
+    </tr>
+  </table>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAuFCkvfNrRDqdboajGnVI4eKGoDjQRk5M",
+      authDomain: "blagajnalukovek.firebaseapp.com",
+      databaseURL: "https://blagajnalukovek-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "blagajnalukovek",
+      storageBucket: "blagajnalukovek.firebasestorage.app",
+      messagingSenderId: "642858971177",
+      appId: "1:642858971177:web:8e91684446fd670bd0ec38",
+      measurementId: "G-6G33YYN9T1"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    db.ref("orders").on("value", snapshot => {
+      const ordersTable = document.getElementById("ordersTable");
+      ordersTable.innerHTML = `
+        <tr>
+          <th>Natakar</th>
+          <th>Miza</th>
+          <th>Artikli</th>
+          <th>Skupaj (€)</th>
+          <th>Status</th>
+        </tr>`;
+
+      snapshot.forEach(child => {
+        const order = child.val();
+        const row = ordersTable.insertRow(-1);
+        row.insertCell(0).innerText = order.waiter;
+        row.insertCell(1).innerText = order.table;
+
+        let itemsStr = "";
+        for (let item in order.items) {
+          itemsStr += `${item} (${order.items[item]}), `;
+        }
+        row.insertCell(2).innerText = itemsStr.slice(0, -2);
+        row.insertCell(3).innerText = order.total.toFixed(2);
+        row.insertCell(4).innerText = order.status;
+      });
+    });
+  </script>
+</body>
+</html>

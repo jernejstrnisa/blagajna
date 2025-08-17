@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+  <meta charset="UTF-8">
+  <title>Seznam naročil</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    .cakanje { background: #ff9999; }   /* rdeče */
+    .v-izvedbi { background: #ffcc66; } /* oranžno */
+    .izvedeno { background: #99e699; }  /* zeleno */
+    button { padding: 5px 10px; margin: 2px; }
+  </style>
+</head>
+<body>
+  <h2>Seznam naročil</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Miza</th>
+        <th>Ime</th>
+        <th>Artikli</th>
+        <th>Skupaj</th>
+        <th>Status</th>
+        <th>Akcije</th>
+      </tr>
+    </thead>
+    <tbody id="tabela"></tbody>
+  </table>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyC5KUuTYzL38tlV0LoZpUKfyZgUKKT6Fps",
+      authDomain: "lukovekblagajna.firebaseapp.com",
+      databaseURL: "https://lukovekblagajna-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "lukovekblagajna",
+      storageBucket: "lukovekblagajna.firebasestorage.app",
+      messagingSenderId: "931349409467",
+      appId: "1:931349409467:web:92a3be614d9e308e18439e",
+      measurementId: "G-7P9RZG602T"
+    };
+
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const tabela = document.getElementById("tabela");
+
+    db.ref("narocila").on("value", snapshot => {
+      tabela.innerHTML = "";
+      snapshot.forEach(child => {
+        const narocilo = child.val();
+        const key = child.key;
+
+        let skupaj = 0;
+        let artikliText = narocilo.artikli.map(a => {
+          skupaj += a.cena * a.kolicina;
+          return `${a.ime} x${a.kolicina}`;
+        }).join(", ");
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${narocilo.miza}</td>
+          <td>${narocilo.ime}</td>
+          <td>${artikliText}</td>
+          <td>${skupaj.toFixed(2)} €</td>
+          <td class="${
+            narocilo.status === 'Čakanje' ? 'cakanje' :
+            narocilo.status === 'V izvedbi' ? 'v-izvedbi' : 'izvedeno'
+          }">${narocilo.status}</td>
+          <td>
+            <button onclick="posodobiStatus('${key}','Čakanje')">Čakanje</button>
+            <button onclick="posodobiStatus('${key}','V izvedbi')">V izvedbi</button>
+            <button onclick="posodobiStatus('${key}','Izvedeno')">Izvedeno</button>
+          </td>
+        `;
+        tabela.appendChild(tr);
+      });
+    });
+
+    function posodobiStatus(id, status) {
+      db.ref("narocila/"+id).update({status});
+      if (status === "Izvedeno") {
+        setTimeout(() => {
+          db.ref("narocila/"+id).remove();
+        }, 5000);
+      }
+    }
+  </script>
+</body>
+</html>

@@ -7,32 +7,25 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <style>
     body { font-family: Arial, sans-serif; margin: 20px; }
-    h1 { color: #333; }
-    .form-section { margin-bottom: 30px; }
-    .items { margin-top: 15px; }
-    .items button { padding: 10px 20px; margin: 5px; cursor: pointer; }
-    .total { font-weight: bold; margin-top: 20px; font-size: 18px; }
-    button.send { background: #4CAF50; color: white; border: none; }
+    label { display: block; margin-top: 10px; }
+    input, button { margin-top: 5px; padding: 5px; }
+    .items-summary { margin-top: 15px; font-weight: bold; }
+    .total { margin-top: 15px; font-size: 18px; font-weight: bold; }
+    button { cursor: pointer; }
   </style>
 </head>
 <body>
   <h1>Naročila - Natakar</h1>
+  <label>Ime natakarja: <input id="waiter" type="text"></label>
+  <label>Številka mize: <input id="table" type="number" value="0"></label>
 
-  <div class="form-section">
-    <label>Ime natakarja: <input type="text" id="waiterName"></label><br><br>
-    <label>Številka mize: <input type="number" id="tableNumber" value="0" min="0"></label>
+  <h3>Artikli</h3>
+  <div id="menu"></div>
 
-    <h2>Cenik</h2>
-    <div class="items">
-      <button onclick="addItem('Pivo')">Pivo (3€)</button>
-      <button onclick="addItem('Vino')">Vino (2.5€)</button>
-      <button onclick="addItem('Čevapčiči')">Čevapčiči (7€)</button>
-      <button onclick="addItem('Hotdog')">Hotdog (4€)</button>
-    </div>
+  <div id="itemsSummary" class="items-summary"></div>
+  <div id="total" class="total">Skupaj: 0 €</div>
 
-    <div class="total">Skupaj: <span id="total">0</span> €</div>
-    <button class="send" onclick="submitOrder()">Pošlji naročilo</button>
-  </div>
+  <button onclick="sendOrder()">Pošlji naročilo</button>
 
   <script>
     const firebaseConfig = {
@@ -49,39 +42,39 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    const prices = { Pivo: 3, Vino: 2.5, Čevapčiči: 7, Hotdog: 4 };
-    let items = {};
+    const prices = { "Pivo": 3, "Vino": 2.5, "Čevapčiči": 7, "Hotdog": 4 };
+    const items = { "Pivo": 0, "Vino": 0, "Čevapčiči": 0, "Hotdog": 0 };
+
+    function updateDisplay() {
+      let total = 0;
+      let summaryText = "";
+      for (let item in items) {
+        total += items[item] * prices[item];
+        if (items[item] > 0) {
+          summaryText += `${item} (${items[item]}) `;
+        }
+      }
+      document.getElementById("itemsSummary").innerText = summaryText.trim();
+      document.getElementById("total").innerText = "Skupaj: " + total.toFixed(2) + " €";
+    }
 
     function addItem(item) {
-      if (!items[item]) items[item] = 0;
       items[item]++;
-      updateTotal();
+      updateDisplay();
     }
 
-    function updateTotal() {
-      let total = 0;
-      for (let key in items) {
-        total += items[key] * prices[key];
-      }
-      document.getElementById("total").innerText = total.toFixed(2);
-    }
-
-    function submitOrder() {
-      const waiterName = document.getElementById("waiterName").value.trim();
-      const tableNumber = document.getElementById("tableNumber").value.trim();
-      if (!waiterName || !tableNumber || tableNumber === "0") {
-        alert("Vnesi ime natakarja in številko mize!");
-        return;
-      }
+    function sendOrder() {
+      const waiter = document.getElementById("waiter").value;
+      const table = document.getElementById("table").value;
 
       let total = 0;
-      for (let key in items) {
-        total += items[key] * prices[key];
+      for (let item in items) {
+        total += items[item] * prices[item];
       }
 
       const order = {
-        waiter: waiterName,
-        table: tableNumber,
+        waiter: waiter,
+        table: table,
         items: items,
         total: total,
         status: "V čakanju"
@@ -89,11 +82,22 @@
 
       db.ref("orders").push(order);
 
-      // Ponastavi obrazec
-      items = {};
-      document.getElementById("total").innerText = "0";
-      document.getElementById("tableNumber").value = 0; // ponastavi mizo na 0
+      // reset polja
+      document.getElementById("table").value = 0;
+      for (let item in items) items[item] = 0;
+      updateDisplay();
     }
+
+    // Gumbi menija
+    const menuDiv = document.getElementById("menu");
+    for (let item in prices) {
+      const btn = document.createElement("button");
+      btn.innerText = `${item} (${prices[item]} €)`;
+      btn.onclick = () => addItem(item);
+      menuDiv.appendChild(btn);
+    }
+
+    updateDisplay();
   </script>
 </body>
 </html>

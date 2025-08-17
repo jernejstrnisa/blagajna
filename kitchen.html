@@ -11,6 +11,11 @@
     table { border-collapse: collapse; width: 100%; margin-top: 10px; }
     th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
     th { background: #f5f5f5; }
+    .status { font-weight: bold; padding: 5px; border-radius: 5px; }
+    .waiting { background: #f8d7da; color: #721c24; }   /* rdeče */
+    .inprogress { background: #fff3cd; color: #856404; } /* oranžno */
+    .done { background: #d4edda; color: #155724; }       /* zeleno */
+    button { margin: 2px; padding: 5px 10px; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -22,6 +27,7 @@
       <th>Artikli</th>
       <th>Skupaj (€)</th>
       <th>Status</th>
+      <th>Akcije</th>
     </tr>
   </table>
 
@@ -40,6 +46,13 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    function getStatusClass(status) {
+      if (status === "V čakanju") return "status waiting";
+      if (status === "V izvedbi") return "status inprogress";
+      if (status === "Zaključeno") return "status done";
+      return "status";
+    }
+
     db.ref("orders").on("value", snapshot => {
       const ordersTable = document.getElementById("ordersTable");
       ordersTable.innerHTML = `
@@ -49,11 +62,14 @@
           <th>Artikli</th>
           <th>Skupaj (€)</th>
           <th>Status</th>
+          <th>Akcije</th>
         </tr>`;
 
       snapshot.forEach(child => {
         const order = child.val();
+        const key = child.key;
         const row = ordersTable.insertRow(-1);
+
         row.insertCell(0).innerText = order.waiter;
         row.insertCell(1).innerText = order.table;
 
@@ -63,7 +79,30 @@
         }
         row.insertCell(2).innerText = itemsStr.slice(0, -2);
         row.insertCell(3).innerText = order.total.toFixed(2);
-        row.insertCell(4).innerText = order.status;
+
+        // Status s barvo
+        const statusCell = row.insertCell(4);
+        const span = document.createElement("span");
+        span.innerText = order.status;
+        span.className = getStatusClass(order.status);
+        statusCell.appendChild(span);
+
+        // Gumbi za spremembo statusa
+        const actionCell = row.insertCell(5);
+
+        if (order.status !== "V izvedbi" && order.status !== "Zaključeno") {
+          const btnStart = document.createElement("button");
+          btnStart.innerText = "V izvedbo";
+          btnStart.onclick = () => db.ref("orders/" + key + "/status").set("V izvedbi");
+          actionCell.appendChild(btnStart);
+        }
+
+        if (order.status === "V izvedbi") {
+          const btnDone = document.createElement("button");
+          btnDone.innerText = "Zaključi";
+          btnDone.onclick = () => db.ref("orders/" + key).remove(); // izbriše naročilo
+          actionCell.appendChild(btnDone);
+        }
       });
     });
   </script>

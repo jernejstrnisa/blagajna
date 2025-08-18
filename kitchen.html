@@ -2,20 +2,64 @@
 <html lang="sl">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- pomembno za telefone -->
   <title>Naročila - Kuhinja</title>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    h1 { color: #333; }
+    body { 
+      font-family: Arial, sans-serif; 
+      margin: 10px; 
+      background: #fafafa;
+    }
+    h1 { color: #333; font-size: 22px; text-align: center; }
     table { border-collapse: collapse; width: 100%; margin-top: 10px; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; font-size: 14px; }
     th { background: #f5f5f5; }
-    .status { font-weight: bold; padding: 5px; border-radius: 5px; }
+    .status { font-weight: bold; padding: 6px; border-radius: 5px; display: inline-block; min-width: 90px; }
     .waiting { background: #f8d7da; color: #721c24; }   /* rdeče */
     .inprogress { background: #fff3cd; color: #856404; } /* oranžno */
     .done { background: #d4edda; color: #155724; }       /* zeleno */
-    button { margin: 2px; padding: 5px 10px; cursor: pointer; }
+    button { 
+      margin: 3px; 
+      padding: 8px 12px; 
+      cursor: pointer; 
+      border: none; 
+      border-radius: 5px; 
+      font-size: 14px;
+    }
+    button:hover { opacity: 0.85; }
+    button:first-child { background: #ffa500; color: white; } /* V izvedbo */
+    button:last-child { background: #28a745; color: white; } /* Zaključi */
+
+    /* Odziven dizajn za telefone */
+    @media (max-width: 768px) {
+      table, thead, tbody, th, td, tr { 
+        display: block; 
+        width: 100%;
+      }
+      thead tr { display: none; } /* skrij glavo tabele na telefonu */
+      tr { 
+        margin-bottom: 15px; 
+        border: 1px solid #ccc; 
+        border-radius: 8px; 
+        background: #fff; 
+        padding: 10px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      }
+      td { 
+        border: none; 
+        text-align: left; 
+        padding: 6px 0; 
+      }
+      td::before { 
+        content: attr(data-label); 
+        font-weight: bold; 
+        display: block; 
+        margin-bottom: 3px; 
+        color: #555;
+      }
+    }
   </style>
 </head>
 <body>
@@ -71,24 +115,34 @@
         const row = ordersTable.insertRow(-1);
 
         row.insertCell(0).innerText = order.waiter;
+        row.cells[0].setAttribute("data-label", "Natakar");
+
         row.insertCell(1).innerText = order.table;
+        row.cells[1].setAttribute("data-label", "Miza");
 
         let itemsStr = "";
         for (let item in order.items) {
-          itemsStr += `${item} (${order.items[item]}), `;
+          if (order.items[item] > 0) {  
+            itemsStr += `${item} (${order.items[item]}), `;
+          }
         }
         row.insertCell(2).innerText = itemsStr.slice(0, -2);
-        row.insertCell(3).innerText = order.total.toFixed(2);
+        row.cells[2].setAttribute("data-label", "Artikli");
 
-        // Status s barvo
+        row.insertCell(3).innerText = order.total.toFixed(2);
+        row.cells[3].setAttribute("data-label", "Skupaj (€)");
+
+        // Status
         const statusCell = row.insertCell(4);
+        statusCell.setAttribute("data-label", "Status");
         const span = document.createElement("span");
         span.innerText = order.status;
         span.className = getStatusClass(order.status);
         statusCell.appendChild(span);
 
-        // Gumbi za spremembo statusa
+        // Gumbi
         const actionCell = row.insertCell(5);
+        actionCell.setAttribute("data-label", "Akcije");
 
         if (order.status !== "V izvedbi" && order.status !== "Zaključeno") {
           const btnStart = document.createElement("button");
@@ -100,7 +154,7 @@
         if (order.status === "V izvedbi") {
           const btnDone = document.createElement("button");
           btnDone.innerText = "Zaključi";
-          btnDone.onclick = () => db.ref("orders/" + key).remove(); // izbriše naročilo
+          btnDone.onclick = () => db.ref("orders/" + key).remove();
           actionCell.appendChild(btnDone);
         }
       });

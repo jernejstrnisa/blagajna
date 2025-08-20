@@ -2,95 +2,40 @@
 <html lang="sl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- 📱 mobilna prilagoditev -->
   <title>Naročila - Natakar</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <style>
-    body { 
-      font-family: Arial, sans-serif; 
-      margin: 10px; 
-      padding: 0;
-    }
-    h1 { font-size: 1.5em; text-align: center; }
-    label { display: block; margin-top: 10px; font-size: 1.1em; }
-    input { 
-      width: 100%; 
-      padding: 10px; 
-      margin-top: 5px; 
-      font-size: 1em; 
-      box-sizing: border-box;
-    }
-    .items-summary { margin-top: 15px; font-weight: bold; }
-    .total { margin-top: 15px; font-size: 1.2em; font-weight: bold; }
-    button { cursor: pointer; }
-
-    /* 🚀 Gumbi artiklov */
-    #menu1, #menu2 {
-      display: flex;
-      flex-wrap: wrap; 
-      justify-content: center; 
-      margin-bottom: 15px;
-    }
-
-    .btn-article {
-      flex: 1 1 45%; /* vsak gumb zavzame 45% širine */
-      min-width: 140px;
-      max-width: 200px;
-      padding: 15px; 
-      margin: 5px;
-      border: none;
-      cursor: pointer;
-      color: #fff;
-      font-weight: bold;
-      border-radius: 8px;
-      font-size: 1.1em;
-      text-align: center;
-    }
-
-    .btn-blue   { background-color: #2196F3; }
-    .btn-green  { background-color: #4CAF50; }
-    .btn-orange { background-color: #FF9800; }
-    .btn-purple { background-color: #9C27B0; }
-
-    .btn-article:hover { opacity: 0.9; }
-
-    /* Gumb za pošiljanje */
-    #sendBtn {
-      width: 100%; 
-      padding: 15px;
-      font-size: 1.2em;
-      font-weight: bold;
-      background-color: #333;
-      color: #fff;
-      border-radius: 8px;
-      margin-top: 15px;
-    }
-
-    #message {
-      text-align: center;
-      margin-top: 10px;
-      font-size: 1.1em;
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    h1 { text-align: center; }
+    .container { display: flex; flex-direction: column; gap: 15px; }
+    .input-row { display: flex; gap: 10px; }
+    .articles { display: flex; flex-wrap: wrap; gap: 10px; }
+    .article-btn { padding: 10px 20px; border: none; color: white; font-weight: bold; border-radius: 5px; cursor: pointer; }
+    .blue { background: #007bff; }
+    .green { background: #28a745; }
+    #statusMsg { color: green; font-weight: bold; margin-top: 10px; text-align: center; }
+    @media (max-width: 600px) {
+      .input-row { flex-direction: column; }
+      .articles { flex-direction: column; align-items: stretch; }
     }
   </style>
 </head>
 <body>
   <h1>Naročila - Natakar</h1>
-  <label>Ime natakarja: <input id="waiter" type="text"></label>
-  <label>Številka mize: <input id="table" type="number"></label>
+  <div class="container">
+    <div class="input-row">
+      <input id="waiter" type="text" placeholder="Ime natakarja">
+      <input id="table" type="number" placeholder="Številka mize">
+    </div>
+    <div id="articleList" class="articles"></div>
+    <div id="summary"></div>
+    <button id="sendOrder">Pošlji naročilo</button>
+    <div id="statusMsg"></div>
+  </div>
 
-  <h3>Artikli</h3>
-  <div id="menu1"></div> <!-- prvi odstavek -->
-  <div id="menu2"></div> <!-- drugi odstavek -->
-
-  <div id="itemsSummary" class="items-summary"></div>
-  <div id="total" class="total">Skupaj: 0 €</div>
-
-  <button id="sendBtn" onclick="sendOrder()">Pošlji naročilo</button>
-  <p id="message" style="color: green; font-weight: bold; display: none;">Naročilo poslano!</p>
-  
   <script>
-    // 🔧 Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyAuFCkvfNrRDqdboajGnVI4eKGoDjQRk5M",
       authDomain: "blagajnalukovek.firebaseapp.com",
@@ -101,97 +46,92 @@
       appId: "1:642858971177:web:8e91684446fd670bd0ec38",
       measurementId: "G-6G33YYN9T1"
     };
+
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // 📋 Artikli – prosto dodaj / barve / skupina
+    // ✅ Artikli z definiranimi cenami in skupino
     const articles = {
-      "Pivo":         { price: 3,   color: "btn-blue",   group: 1 },
-      "Vino rdeče":   { price: 2.5, color: "btn-blue",   group: 1 },
-      "Vino belo":    { price: 2.5, color: "btn-blue",   group: 1 },
-      "Liter":        { price: 10,  color: "btn-blue",   group: 1 },
-      "Čevapčiči":    { price: 10,   color: "btn-green",  group: 2 },
-      "Hotdog":       { price: 4,   color: "btn-green",  group: 2 },
-      "Kotlet":       { price: 10,   color: "btn-green",  group: 2 },
-      "Mešano":       { price: 10,   color: "btn-green",  group: 2 },
-      "Jägermaister": { price: 3,   color: "btn-purple", group: 1 }
+      "Pivo": { price: 3, group: 1, color: "blue", qty: 0 },
+      "Vino": { price: 4, group: 1, color: "blue", qty: 0 },
+      "Čevapčiči": { price: 7, group: 2, color: "green", qty: 0 },
+      "Hotdog": { price: 5, group: 2, color: "green", qty: 0 }
     };
 
-    const items = {};
-    for (let i in articles) items[i] = 0;
+    const articleList = document.getElementById("articleList");
+    const summary = document.getElementById("summary");
+    const statusMsg = document.getElementById("statusMsg");
 
-    function updateDisplay() {
+    // ✅ Nariši gumbe za artikle
+    for (let name in articles) {
+      const btn = document.createElement("button");
+      btn.innerText = `${name} (0)`;
+      btn.className = `article-btn ${articles[name].color}`;
+      btn.onclick = () => {
+        articles[name].qty++;
+        updateSummary();
+      };
+      articles[name].btn = btn;
+      articleList.appendChild(btn);
+    }
+
+    function updateSummary() {
       let total = 0;
-      let summaryText = "";
-      for (let item in items) {
-        total += items[item] * articles[item].price;
-        if (items[item] > 0) {
-          summaryText += `${item} (${items[item]}) `;
+      let txt = "<strong>Izbrano:</strong><br>";
+      for (let name in articles) {
+        const a = articles[name];
+        if (a.qty > 0) {
+          txt += `${name}: ${a.qty} × ${a.price}€<br>`;
+          total += a.qty * a.price;
         }
+        a.btn.innerText = `${name} (${a.qty})`;
       }
-      document.getElementById("itemsSummary").innerText = summaryText.trim();
-      document.getElementById("total").innerText = "Skupaj: " + total.toFixed(2) + " €";
+      txt += `<br><strong>Skupaj: ${total.toFixed(2)} €</strong>`;
+      summary.innerHTML = txt;
     }
 
-    function addItem(item) {
-      items[item]++;
-      updateDisplay();
-    }
-
-    function sendOrder() {
+    document.getElementById("sendOrder").onclick = () => {
       const waiter = document.getElementById("waiter").value.trim();
       const table = document.getElementById("table").value.trim();
-
       if (!waiter || !table) {
-        alert("Vnesi ime natakarja in številko mize!");
+        alert("Prosim vnesi ime natakarja in številko mize!");
         return;
       }
 
       let total = 0;
-      for (let item in items) {
-        total += items[item] * articles[item].price;
+      let orderItems = {};
+      for (let name in articles) {
+        if (articles[name].qty > 0) {
+          orderItems[name] = {
+            qty: articles[name].qty,
+            group: articles[name].group
+          };
+          total += articles[name].qty * articles[name].price;
+        }
       }
 
-      const order = {
-        waiter: waiter,
-        table: table,
-        items: { ...items },
-        total: total,
+      if (Object.keys(orderItems).length === 0) {
+        alert("Izberi vsaj en artikel!");
+        return;
+      }
+
+      const newOrder = {
+        waiter,
+        table: parseInt(table),
+        items: orderItems,
+        total,
         status: "V čakanju"
       };
 
-      db.ref("orders").push(order);
+      db.ref("orders").push(newOrder);
 
-      // reset polja
+      // reset polj
+      for (let name in articles) articles[name].qty = 0;
+      updateSummary();
       document.getElementById("table").value = "";
-      for (let item in items) items[item] = 0;
-      updateDisplay();
-
-      // prikaži sporočilo
-      const msg = document.getElementById("message");
-      msg.style.display = "block";
-      msg.innerText = "Naročilo poslano!";
-      setTimeout(() => { msg.style.display = "none"; }, 1000);
-    }
-
-    // 🔘 Gumbi menija (razdelitev v 2 odstavka)
-    const menu1Div = document.getElementById("menu1");
-    const menu2Div = document.getElementById("menu2");
-
-    for (let item in articles) {
-      const btn = document.createElement("button");
-      btn.innerText = `${item} (${articles[item].price} €)`;
-      btn.onclick = () => addItem(item);
-      btn.classList.add("btn-article", articles[item].color);
-
-      if (articles[item].group === 1) {
-        menu1Div.appendChild(btn);
-      } else {
-        menu2Div.appendChild(btn);
-      }
-    }
-
-    updateDisplay();
+      statusMsg.innerText = "Naročilo poslano!";
+      setTimeout(() => statusMsg.innerText = "", 2000);
+    };
   </script>
 </body>
 </html>

@@ -3,122 +3,94 @@
 <head>
   <meta charset="UTF-8">
   <title>Natakar</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <style>
     body { 
       font-family: Arial, sans-serif; 
-      margin: 20px; 
+      margin: 10px; 
       background: #f8f9fa;
     }
     h1 { 
       text-align: center; 
-      color: #333; 
-      margin-bottom: 20px;
+      font-size: 20px;
+      margin-bottom: 12px;
     }
     .container { 
       display: flex; 
       flex-direction: column; 
-      gap: 10px; 
-      max-width: 600px; 
+      gap: 8px; 
+      max-width: 480px; 
       margin: auto;
     }
     .input-row { 
       display: flex; 
-      gap: 10px; 
+      gap: 6px; 
     }
     input { 
       flex: 1; 
-      padding: 8px; 
+      padding: 6px; 
       border: 1px solid #ccc; 
-      border-radius: 10px; 
-      font-size: 16px; 
-      outline: none; 
-      transition: border-color 0.3s;
-    }
-    input:focus {
-      border-color: #007bff;
-      box-shadow: 0 0 6px rgba(0,123,255,0.3);
+      border-radius: 8px; 
+      font-size: 14px; 
     }
     .articles { 
-      display: flex; 
-      flex-wrap: wrap; 
-      gap: 10px; 
-      justify-content: center;
-    }
-    .article { 
-      display: flex; 
-      align-items: center; 
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
       gap: 6px; 
     }
     .article-btn { 
-      padding: 8px 10px; 
+      padding: 8px; 
       border: none; 
       color: white; 
       font-weight: bold; 
-      border-radius: 8px; 
+      border-radius: 6px; 
       cursor: pointer; 
-      font-size: 16px;
-      box-shadow: 0 3px 6px rgba(0,0,0,0.2);
-      transition: transform 0.15s, opacity 0.2s;
-    }
-    .article-btn:hover {
-      transform: scale(1.05);
-      opacity: 0.9;
+      font-size: 14px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.15);
     }
     .minus-btn { 
-      padding: 7px 10px; 
+      padding: 6px; 
       border: none; 
       background: #6c757d; 
       color: white; 
-      border-radius: 8px; 
+      border-radius: 6px; 
       cursor: pointer; 
-      font-size: 15px;
+      font-size: 14px;
       font-weight: bold;
-      box-shadow: 0 3px 6px rgba(0,0,0,0.2);
-      transition: transform 0.15s, opacity 0.2s;
-    }
-    .minus-btn:hover {
-      transform: scale(1.05);
-      opacity: 0.9;
     }
     .blue { background: #007bff; }
     .green { background: #28a745; }
     .purple { background: slateblue;}
     #summary { 
-      margin-top: 10px; 
-      font-size: 16px; 
+      margin-top: 6px; 
+      font-size: 14px; 
       background: white; 
-      padding: 12px; 
-      border-radius: 8px; 
-      box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+      padding: 8px; 
+      border-radius: 6px; 
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     #sendOrder {
-      padding: 14px;
-      font-size: 16px;
+      padding: 10px;
+      font-size: 15px;
       font-weight: bold;
       border: none;
-      border-radius: 8px;
+      border-radius: 6px;
       background: #ff7f00;
       color: white;
       cursor: pointer;
-      box-shadow: 0 3px 6px rgba(0,0,0,0.2);
-      transition: background 0.2s, transform 0.15s;
     }
-    #sendOrder:hover {
-      background: #e76f00;
-      transform: scale(1.03);
-    }
+    #sendOrder:hover { background: #e76f00; }
     #statusMsg { 
       color: green; 
       font-weight: bold; 
-      margin-top: 10px; 
+      margin-top: 6px; 
       text-align: center; 
+      font-size: 14px;
     }
     @media (max-width: 600px) {
       .input-row { flex-direction: column; }
-      .articles { flex-direction: column; align-items: stretch; }
     }
   </style>
 </head>
@@ -127,7 +99,7 @@
   <div class="container">
     <div class="input-row">
       <input id="waiter" type="text" placeholder="Ime natakarja">
-      <input id="table" type="number" placeholder="Številka mize">
+      <input id="table" type="number" placeholder="Št. mize">
     </div>
     <div id="articleList" class="articles"></div>
     <div id="summary"></div>
@@ -150,7 +122,6 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Artikli
     const articles = {
       "Pivo":             { price: 3, group: 1, color: "blue", qty: 0 },
       "Špricar rdeč":     { price: 2.5, group: 1, color: "blue", qty: 0 },
@@ -163,7 +134,6 @@
       "Vino rdeče 1l":    { price: 10, group: 1, color: "blue", qty: 0 },
       "Vino belo 1l":     { price: 10, group: 1, color: "blue", qty: 0 },
       "Jägermaiser":      { price: 3, group: 1, color: "purple", qty: 0 },
-      
       "Čevapčiči":  { price: 10, group: 2, color: "green", qty: 0 },
       "Kotleti":    { price: 10, group: 2, color: "green", qty: 0 },
       "Mešano":     { price: 10, group: 2, color: "green", qty: 0 },
@@ -174,29 +144,22 @@
     const summary = document.getElementById("summary");
     const statusMsg = document.getElementById("statusMsg");
 
-    // ✅ Nariši gumbe
     for (let name in articles) {
-      const wrapper = document.createElement("div");
-      wrapper.className = "article";
-
       const plusBtn = document.createElement("button");
-      plusBtn.innerText = `${name} (${articles[name].price}€)`; // prikaz cene
+      plusBtn.innerText = `${name} (${articles[name].price}€)`;
       plusBtn.className = `article-btn ${articles[name].color}`;
-      plusBtn.onclick = () => {
-        articles[name].qty++;
-        updateSummary();
-      };
+      plusBtn.onclick = () => { articles[name].qty++; updateSummary(); };
 
       const minusBtn = document.createElement("button");
       minusBtn.innerText = "−";
       minusBtn.className = "minus-btn";
       minusBtn.onclick = () => {
-        if (articles[name].qty > 0) {
-          articles[name].qty--;
-          updateSummary();
-        }
+        if (articles[name].qty > 0) { articles[name].qty--; updateSummary(); }
       };
 
+      const wrapper = document.createElement("div");
+      wrapper.style.display = "flex";
+      wrapper.style.gap = "4px";
       wrapper.appendChild(plusBtn);
       wrapper.appendChild(minusBtn);
       articleList.appendChild(wrapper);
@@ -218,42 +181,24 @@
     document.getElementById("sendOrder").onclick = () => {
       const waiter = document.getElementById("waiter").value.trim();
       const table = document.getElementById("table").value.trim();
-      if (!waiter || !table) {
-        alert("Prosim vnesi ime natakarja in številko mize!");
-        return;
-      }
+      if (!waiter || !table) { alert("Prosim vnesi ime natakarja in številko mize!"); return; }
 
       let total = 0;
       let orderItems = {};
       for (let name in articles) {
         if (articles[name].qty > 0) {
-          orderItems[name] = {
-            qty: articles[name].qty,
-            group: articles[name].group
-          };
+          orderItems[name] = { qty: articles[name].qty, group: articles[name].group };
           total += articles[name].qty * articles[name].price;
         }
       }
+      if (Object.keys(orderItems).length === 0) { alert("Izberi vsaj en artikel!"); return; }
 
-      if (Object.keys(orderItems).length === 0) {
-        alert("Izberi vsaj en artikel!");
-        return;
-      }
-
-      const newOrder = {
-        waiter,
-        table: parseInt(table),
-        items: orderItems,
-        total,
-        status: "V čakanju"
-      };
-
+      const newOrder = { waiter, table: parseInt(table), items: orderItems, total, status: "V čakanju" };
       db.ref("orders").push(newOrder);
 
-      // reset količin
       for (let name in articles) articles[name].qty = 0;
       updateSummary();
-      document.getElementById("table").value = ""; // reset samo mizo
+      document.getElementById("table").value = "";
       statusMsg.innerText = "✅ Naročilo poslano!";
       setTimeout(() => statusMsg.innerText = "", 2000);
     };

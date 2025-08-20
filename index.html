@@ -20,7 +20,7 @@
     .container { 
       display: flex; 
       flex-direction: column; 
-      gap: 20px; 
+      gap: 10px; 
       max-width: 600px; 
       margin: auto;
     }
@@ -30,9 +30,9 @@
     }
     input { 
       flex: 1; 
-      padding: 12px; 
+      padding: 8px; 
       border: 1px solid #ccc; 
-      border-radius: 8px; 
+      border-radius: 10px; 
       font-size: 16px; 
       outline: none; 
       transition: border-color 0.3s;
@@ -44,7 +44,7 @@
     .articles { 
       display: flex; 
       flex-wrap: wrap; 
-      gap: 12px; 
+      gap: 10px; 
       justify-content: center;
     }
     .article { 
@@ -53,7 +53,7 @@
       gap: 6px; 
     }
     .article-btn { 
-      padding: 12px 18px; 
+      padding: 8px 10px; 
       border: none; 
       color: white; 
       font-weight: bold; 
@@ -68,13 +68,13 @@
       opacity: 0.9;
     }
     .minus-btn { 
-      padding: 10px 14px; 
+      padding: 7px 10px; 
       border: none; 
       background: #6c757d; 
       color: white; 
       border-radius: 8px; 
       cursor: pointer; 
-      font-size: 18px;
+      font-size: 15px;
       font-weight: bold;
       box-shadow: 0 3px 6px rgba(0,0,0,0.2);
       transition: transform 0.15s, opacity 0.2s;
@@ -85,6 +85,7 @@
     }
     .blue { background: #007bff; }
     .green { background: #28a745; }
+    .purple { background: slateblue;}
     #summary { 
       margin-top: 10px; 
       font-size: 16px; 
@@ -151,10 +152,22 @@
 
     // Artikli
     const articles = {
-      "Pivo":       { price: 3, group: 1, color: "blue", qty: 0 },
-      "Vino":       { price: 4, group: 1, color: "blue", qty: 0 },
-      "Čevapčiči":  { price: 7, group: 2, color: "green", qty: 0 },
-      "Hotdog":     { price: 5, group: 2, color: "green", qty: 0 }
+      "Pivo":             { price: 3, group: 1, color: "blue", qty: 0 },
+      "Špricar rdeč":     { price: 2.5, group: 1, color: "blue", qty: 0 },
+      "Špricar bel":      { price: 2.5, group: 1, color: "blue", qty: 0 },
+      "Malt":             { price: 2.5, group: 1, color: "blue", qty: 0 },
+      "Ledeni čaj":       { price: 2.5, group: 1, color: "blue", qty: 0 },
+      "Voda z okusom":    { price: 2.5, group: 1, color: "blue", qty: 0 },
+      "Voda navadna":     { price: 2.5, group: 1, color: "blue", qty: 0 },
+      "Izotonik":         { price: 2.5, group: 1, color: "blue", qty: 0 },
+      "Vino rdeče 1l":    { price: 10, group: 1, color: "blue", qty: 0 },
+      "Vino belo 1l":     { price: 10, group: 1, color: "blue", qty: 0 },
+      "Jägermaiser":      { price: 3, group: 1, color: "purple", qty: 0 },
+      
+      "Čevapčiči":  { price: 10, group: 2, color: "green", qty: 0 },
+      "Kotleti":    { price: 10, group: 2, color: "green", qty: 0 },
+      "Mešano":     { price: 10, group: 2, color: "green", qty: 0 },
+      "Hotdog":     { price: 4, group: 2, color: "green", qty: 0 }
     };
 
     const articleList = document.getElementById("articleList");

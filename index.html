@@ -2,20 +2,119 @@
 <html lang="sl">
 <head>
   <meta charset="UTF-8">
-  <title>Naročila - Natakar</title>
+  <title>Natakar</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    h1 { text-align: center; }
-    .container { display: flex; flex-direction: column; gap: 15px; }
-    .input-row { display: flex; gap: 10px; }
-    .articles { display: flex; flex-wrap: wrap; gap: 10px; }
-    .article-btn { padding: 10px 20px; border: none; color: white; font-weight: bold; border-radius: 5px; cursor: pointer; }
+    body { 
+      font-family: Arial, sans-serif; 
+      margin: 20px; 
+      background: #f8f9fa;
+    }
+    h1 { 
+      text-align: center; 
+      color: #333; 
+      margin-bottom: 20px;
+    }
+    .container { 
+      display: flex; 
+      flex-direction: column; 
+      gap: 20px; 
+      max-width: 600px; 
+      margin: auto;
+    }
+    .input-row { 
+      display: flex; 
+      gap: 10px; 
+    }
+    input { 
+      flex: 1; 
+      padding: 12px; 
+      border: 1px solid #ccc; 
+      border-radius: 8px; 
+      font-size: 16px; 
+      outline: none; 
+      transition: border-color 0.3s;
+    }
+    input:focus {
+      border-color: #007bff;
+      box-shadow: 0 0 6px rgba(0,123,255,0.3);
+    }
+    .articles { 
+      display: flex; 
+      flex-wrap: wrap; 
+      gap: 12px; 
+      justify-content: center;
+    }
+    .article { 
+      display: flex; 
+      align-items: center; 
+      gap: 6px; 
+    }
+    .article-btn { 
+      padding: 12px 18px; 
+      border: none; 
+      color: white; 
+      font-weight: bold; 
+      border-radius: 8px; 
+      cursor: pointer; 
+      font-size: 16px;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+      transition: transform 0.15s, opacity 0.2s;
+    }
+    .article-btn:hover {
+      transform: scale(1.05);
+      opacity: 0.9;
+    }
+    .minus-btn { 
+      padding: 10px 14px; 
+      border: none; 
+      background: #6c757d; 
+      color: white; 
+      border-radius: 8px; 
+      cursor: pointer; 
+      font-size: 18px;
+      font-weight: bold;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+      transition: transform 0.15s, opacity 0.2s;
+    }
+    .minus-btn:hover {
+      transform: scale(1.05);
+      opacity: 0.9;
+    }
     .blue { background: #007bff; }
     .green { background: #28a745; }
-    #statusMsg { color: green; font-weight: bold; margin-top: 10px; text-align: center; }
+    #summary { 
+      margin-top: 10px; 
+      font-size: 16px; 
+      background: white; 
+      padding: 12px; 
+      border-radius: 8px; 
+      box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+    }
+    #sendOrder {
+      padding: 14px;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      background: #ff7f00;
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+      transition: background 0.2s, transform 0.15s;
+    }
+    #sendOrder:hover {
+      background: #e76f00;
+      transform: scale(1.03);
+    }
+    #statusMsg { 
+      color: green; 
+      font-weight: bold; 
+      margin-top: 10px; 
+      text-align: center; 
+    }
     @media (max-width: 600px) {
       .input-row { flex-direction: column; }
       .articles { flex-direction: column; align-items: stretch; }
@@ -23,7 +122,7 @@
   </style>
 </head>
 <body>
-  <h1>Naročila - Natakar</h1>
+  <h1>Natakar</h1>
   <div class="container">
     <div class="input-row">
       <input id="waiter" type="text" placeholder="Ime natakarja">
@@ -50,44 +149,57 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // ✅ Artikli z definiranimi cenami in skupino
+    // Artikli
     const articles = {
-      "Pivo": { price: 3, group: 1, color: "blue", qty: 0 },
-      "Vino": { price: 4, group: 1, color: "blue", qty: 0 },
-      "Čevapčiči": { price: 7, group: 2, color: "green", qty: 0 },
-      "Hotdog": { price: 5, group: 2, color: "green", qty: 0 }
+      "Pivo":       { price: 3, group: 1, color: "blue", qty: 0 },
+      "Vino":       { price: 4, group: 1, color: "blue", qty: 0 },
+      "Čevapčiči":  { price: 7, group: 2, color: "green", qty: 0 },
+      "Hotdog":     { price: 5, group: 2, color: "green", qty: 0 }
     };
 
     const articleList = document.getElementById("articleList");
     const summary = document.getElementById("summary");
     const statusMsg = document.getElementById("statusMsg");
 
-    // ✅ Nariši gumbe za artikle
+    // ✅ Nariši gumbe
     for (let name in articles) {
-      const btn = document.createElement("button");
-      btn.innerText = `${name} (0)`;
-      btn.className = `article-btn ${articles[name].color}`;
-      btn.onclick = () => {
+      const wrapper = document.createElement("div");
+      wrapper.className = "article";
+
+      const plusBtn = document.createElement("button");
+      plusBtn.innerText = `${name} (${articles[name].price}€)`; // prikaz cene
+      plusBtn.className = `article-btn ${articles[name].color}`;
+      plusBtn.onclick = () => {
         articles[name].qty++;
         updateSummary();
       };
-      articles[name].btn = btn;
-      articleList.appendChild(btn);
+
+      const minusBtn = document.createElement("button");
+      minusBtn.innerText = "−";
+      minusBtn.className = "minus-btn";
+      minusBtn.onclick = () => {
+        if (articles[name].qty > 0) {
+          articles[name].qty--;
+          updateSummary();
+        }
+      };
+
+      wrapper.appendChild(plusBtn);
+      wrapper.appendChild(minusBtn);
+      articleList.appendChild(wrapper);
     }
 
     function updateSummary() {
       let total = 0;
-      let txt = "<strong>Izbrano:</strong><br>";
+      let txt = "";
       for (let name in articles) {
         const a = articles[name];
         if (a.qty > 0) {
           txt += `${name}: ${a.qty} × ${a.price}€<br>`;
           total += a.qty * a.price;
         }
-        a.btn.innerText = `${name} (${a.qty})`;
       }
-      txt += `<br><strong>Skupaj: ${total.toFixed(2)} €</strong>`;
-      summary.innerHTML = txt;
+      summary.innerHTML = txt ? `<strong>Izbrano:</strong><br>${txt}<br><strong>Skupaj: ${total.toFixed(2)} €</strong>` : "";
     }
 
     document.getElementById("sendOrder").onclick = () => {
@@ -125,11 +237,11 @@
 
       db.ref("orders").push(newOrder);
 
-      // reset polj
+      // reset količin
       for (let name in articles) articles[name].qty = 0;
       updateSummary();
-      document.getElementById("table").value = "";
-      statusMsg.innerText = "Naročilo poslano!";
+      document.getElementById("table").value = ""; // reset samo mizo
+      statusMsg.innerText = "✅ Naročilo poslano!";
       setTimeout(() => statusMsg.innerText = "", 2000);
     };
   </script>

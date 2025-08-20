@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Naročila - Jurček 2</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 10px; background: #fafafa; }
+    h1 { color: #333; font-size: 30px; text-align: center; }
+    table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; font-size: 14px; }
+    th { background: #f5f5f5; }
+    .status { font-weight: bold; padding: 6px; border-radius: 5px; display: inline-block; min-width: 90px; }
+    .waiting { background: #f8d7da; color: #721c24; }
+    .inprogress { background: #fff3cd; color: #856404; }
+    .done { background: #d4edda; color: #155724; }
+    button { margin: 3px; padding: 8px 12px; cursor: pointer; border: none; border-radius: 5px; font-size: 14px; }
+    button:hover { opacity: 0.85; }
+    button:first-child { background: #ffa500; color: white; }
+    button:last-child { background: #28a745; color: white; }
+    @media (max-width: 768px) {
+      table, thead, tbody, th, td, tr { display: block; width: 100%; }
+      thead tr { display: none; }
+      tr { margin-bottom: 15px; border: 1px solid #ccc; border-radius: 8px; background: #fff; padding: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+      td { border: none; text-align: left; padding: 6px 0; }
+      td::before { content: attr(data-label); font-weight: bold; display: block; margin-bottom: 3px; color: #555; }
+    }
+  </style>
+</head>
+<body>
+  <h1>Naročila - Jurček 2</h1>
+  <table id="ordersTable">
+    <tr>
+      <th>Natakar</th>
+      <th>Miza</th>
+      <th>Artikli</th>
+      <th>Skupaj (€)</th>
+      <th>Status</th>
+      <th>Akcije</th>
+    </tr>
+  </table>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAuFCkvfNrRDqdboajGnVI4eKGoDjQRk5M",
+      authDomain: "blagajnalukovek.firebaseapp.com",
+      databaseURL: "https://blagajnalukovek-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "blagajnalukovek",
+      storageBucket: "blagajnalukovek.firebasestorage.app",
+      messagingSenderId: "642858971177",
+      appId: "1:642858971177:web:8e91684446fd670bd0ec38",
+      measurementId: "G-6G33YYN9T1"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    function getStatusClass(status) {
+      if (status === "V čakanju") return "status waiting";
+      if (status === "V izvedbi") return "status inprogress";
+      if (status === "Zaključeno") return "status done";
+      return "status";
+    }
+
+    db.ref("orders").on("value", snapshot => {
+      const ordersTable = document.getElementById("ordersTable");
+      ordersTable.innerHTML = `
+        <tr>
+          <th>Natakar</th>
+          <th>Miza</th>
+          <th>Artikli</th>
+          <th>Skupaj (€)</th>
+          <th>Status</th>
+          <th>Akcije</th>
+        </tr>`;
+
+      snapshot.forEach(child => {
+        const order = child.val();
+        const key = child.key;
+
+        // filter za mize 51–130
+        if (order.table < 51 || order.table > 130) return;
+
+        let itemsStr = "";
+        for (let item in order.items) {
+          const art = order.items[item];
+          if (art.qty > 0) itemsStr += `${item} (${art.qty}), `;
+        }
+        if (!itemsStr) return;
+
+        const row = ordersTable.insertRow(-1);
+        row.insertCell(0).innerText = order.waiter;
+        row.cells[0].setAttribute("data-label", "Natakar");
+
+        row.insertCell(1).innerText = order.table;
+        row.cells[1].setAttribute("data-label", "Miza");
+
+        row.insertCell(2).innerText = itemsStr.slice(0, -2);
+        row.cells[2].setAttribute("data-label", "Artikli");
+
+        row.insertCell(3).innerText = order.total.toFixed(2);
+        row.cells[3].setAttribute("data-label", "Skupaj (€)");
+
+        const statusCell = row.insertCell(4);
+        const span = document.createElement("span");
+        span.innerText = order.statusJurcek2 || "V čakanju";
+        span.className = getStatusClass(span.innerText);
+        statusCell.appendChild(span);
+
+        const actionCell = row.insertCell(5);
+
+        if (span.innerText !== "V izvedbi" && span.innerText !== "Zaključeno") {
+          const btnStart = document.createElement("button");
+          btnStart.innerText = "V izvedbo";
+          btnStart.onclick = () => db.ref("orders/" + key + "/statusJurcek2").set("V izvedbi");
+          actionCell.appendChild(btnStart);
+        }
+
+        if (span.innerText === "V izvedbi") {
+          const btnDone = document.createElement("button");
+          btnDone.innerText = "Zaključi";
+          btnDone.onclick = () => db.ref("orders/" + key + "/statusJurcek2").set("Zaključeno");
+          actionCell.appendChild(btnDone);
+        }
+
+        // ✅ Samodejno brisanje
+        const hasOnlyGroup1 = Object.values(order.items).every(art => art.group === 1);
+        if ((order.statusJurcek2 === "Zaključeno" && order.statusKitchen === "Zaključeno") ||
+            (hasOnlyGroup1 && order.statusJurcek2 === "Zaključeno")) {
+          setTimeout(() => db.ref("orders/" + key).remove(), 1000);
+        }
+      });
+    });
+  </script>
+</body>
+</html>
